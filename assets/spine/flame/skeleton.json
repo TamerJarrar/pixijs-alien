@@ -1,0 +1,49 @@
+{
+"skeleton": {
+	"hash": "euWkgZyiyq4",
+	"spine": "4.1.19",
+	"x": -75,
+	"y": -23,
+	"width": 122,
+	"height": 46,
+	"images": "/Users/designer1/Documents/Photoshop/alien Rainbow/flame",
+	"audio": ""
+},
+"bones": [
+	{ "name": "root" }
+],
+"slots": [
+	{ "name": "1", "bone": "root", "attachment": "flame" }
+],
+"skins": [
+	{
+		"name": "default",
+		"attachments": {
+			"1": {
+				"flame": {
+					"rotation": -178.42,
+					"width": 116,
+					"height": 46,
+					"sequence": { "count": 7, "digits": 2 }
+				}
+			}
+		}
+	}
+],
+"animations": {
+	"animation": {
+		"attachments": {
+			"default": {
+				"1": {
+					"flame": {
+						"sequence": [
+							{ "mode": "loop", "delay": 0.0417 },
+							{ "time": 0.5667, "mode": "loop", "index": 6 }
+						]
+					}
+				}
+			}
+		}
+	}
+}
+}

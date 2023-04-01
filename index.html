@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.3/pixi.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pixi-spine@4.0.3/dist/pixi-spine.js"></script>
+
+    <script>
+
+
+
+
+
+        //Init the crash game 
+
+
+
+        // Set up PixiJS application
+        const app = new PIXI.Application({
+            width: window.innerWidth,
+            height: window.innerHeight,
+            antialias: true,
+            backgroundColor: 0x1d1929
+        });
+        document.body.appendChild(app.view);
+
+        // Create a canvas element and draw the gradient
+        const canvas = document.createElement('canvas');
+        canvas.width = app.screen.width;
+        canvas.height = app.screen.height;
+        const context = canvas.getContext('2d');
+        const gradient = context.createLinearGradient(0, 0, 0, app.screen.height);
+        gradient.addColorStop(0, '#1D1929');
+        gradient.addColorStop(1, '#2A243A');
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Create a texture from the canvas
+        const texture = PIXI.Texture.from(canvas);
+
+        // Create the background sprite
+        const background = new PIXI.Sprite(texture);
+        app.stage.addChild(background);
+
+        // Create parallax star fields
+        const starFields = [];
+        for (let i = 0; i < 3; i++) {
+            const starField = new PIXI.ParticleContainer(5000, {
+                scale: true,
+                position: true,
+                rotation: true,
+                uvs: true,
+                alpha: true
+            });
+            starFields.push(starField);
+            app.stage.addChild(starField);
+
+            // Load star texture and create stars
+            const starTexture = PIXI.Texture.from('./star.png');
+            for (let j = 0; j < 35; j++) {
+                const star = new PIXI.Sprite(starTexture);
+                star.scale.set(0.1 + Math.random() * 0.01);
+                star.position.set(Math.random() * app.screen.width, Math.random() * app.screen.height);
+                star.alpha = 0.2 + Math.random() * 0.8;
+                star.tint = 0x3C3553; // Set initial tint color to white
+                starField.addChild(star);
+            }
+
+            // Add animation to the stars to make them twinkle and move at different speeds
+            app.ticker.add(() => {
+                for (let k = 0; k < starField.children.length; k++) {
+                    const star = starField.children[k];
+                    star.alpha += 0.01 * (0.5 - Math.random());
+                    if (star.alpha <= 0.2) {
+                        star.alpha = 0.2;
+                    } else if (star.alpha >= 1) {
+                        star.alpha = 1;
+                    }
+                    star.position.x -= 10;
+                    star.position.y += 6;
+                    if (star.position.x < 0) {
+                        star.position.x = app.screen.width + Math.random() * 100;
+                    }
+                    if (star.position.y >= (app.screen.height * 1)) {
+                        star.position.y = (Math.random() * app.screen.height) * 0.1;
+                    }
+                    // Adjust opacity to make star shine brighter
+                    star.alpha = 0.1 + Math.random() * 0.95;
+                }
+            });
+
+        }
+
+
+
+        // Add interactivity to move the star fields
+        let dragging = false;
+        let pointerStart = { x: 0, y: 0 };
+        let containerStart = { x: 0, y: 0 };
+        for (let i = 0; i < starFields.length; i++) {
+            const starField = starFields[i];
+            starField.interactive = true;
+            starField.on('pointerdown', (event) => {
+                dragging = true;
+                pointerStart = event.data.global.clone();
+                containerStart = starField.position.clone();
+            });
+            starField.on('pointermove', (event) => {
+                if (dragging) {
+                    const pointerEnd = event.data.global.clone();
+                    const dragOffset = pointerEnd.subtract(pointerStart);
+                    starField.position.set(containerStart.x + dragOffset.x, containerStart.y + dragOffset.y);
+                }
+            });
+            starField.on('pointerup', () => {
+                dragging = false;
+            });
+            starField.on('pointerupoutside', () => {
+                dragging = false;
+            });
+        }
+
+
+
+        // Create a container for the lines
+        const lines = new PIXI.Container();
+        app.stage.addChild(lines);
+
+        // Draw the lines
+        const lineColor = 0xFFFFFF;
+        const lineThickness = 1;
+        const lineLength = 50;
+        const minDistance = 10; // Minimum distance between lines
+        const existingLines = []; // Array to hold existing lines
+
+        for (let i = 0; i < 5; i++) {
+            let lineAdded = false;
+            while (!lineAdded) {
+                const line = new PIXI.Graphics();
+                line.lineStyle(lineThickness, lineColor);
+                line.moveTo(lineLength, 0);
+                line.lineTo(0, lineLength);
+                line.alpha = 0.2;
+                line.position.set(app.screen.width * (0.75 + Math.random() * 0.25), -app.screen.height * Math.random());
+                line.lastUpdateTime = Date.now();
+
+                // Check distance between new line and existing lines
+                let lineDistance = Infinity;
+                for (let j = 0; j < existingLines.length; j++) {
+                    const existingLine = existingLines[j];
+                    const dx = line.position.x - existingLine.position.x;
+                    const dy = line.position.y - existingLine.position.y;
+                    if (dx < 0) {
+                        const lineDistance = Math.sqrt(dx * dx + dy * dy);
+                        if (lineDistance < minDistance) {
+                            lineAdded = false;
+                            break;
+                        }
+                    }
+
+                }
+
+                // Add new line if distance is greater than the minimum
+                if (lineDistance >= minDistance) {
+                    lines.addChild(line);
+                    existingLines.push(line);
+                    lineAdded = true;
+                }
+            }
+        }
+
+        // Animate the lines
+        app.ticker.add(() => {
+            const currentTime = Date.now();
+            for (let i = 0; i < lines.children.length; i++) {
+                const line = lines.children[i];
+                const timeDiff = currentTime - line.lastUpdateTime;
+                if (timeDiff >= 20) { // update every 200ms
+                    line.position.x -= 80;
+                    line.position.y += 79;
+                    line.lastUpdateTime = currentTime;
+                    if (line.position.y > app.screen.height + lineLength) {
+                        line.position.x = app.screen.width * (0.75 + Math.random() * 0.25);
+                        line.position.y = -app.screen.height * Math.random();
+                        line.lastUpdateTime = currentTime; // reset last update time
+                    }
+                }
+            }
+        });
+
+
+
+
+
+        PIXI.Assets.load("./assets/spine/skeleton.json").then((resource) => {
+            const animation = new PIXI.spine.Spine(resource.spineData);
+            app.stage.addChild(animation);
+
+            // add the animation to the scene and render...
+            app.stage.addChild(animation);
+
+            if (animation.state.hasAnimation('wait')) {
+                animation.state.setAnimation(0, 'Movment', true);
+                animation.x = window.innerWidth / 2
+                animation.y = window.innerHeight / 2
+            }
+        });
+
+
+
+
+
+
+        // Create Spine objects
+        const spineData = [
+            { url: 'assets/spine/flame/skeleton.json', y: 100, alpha: 1, scale: 2 },
+            { url: 'assets/spine/flame/skeleton.json', y: 300, alpha: 0.6, scale: 1 },
+            { url: 'assets/spine/flame/skeleton.json', y: app.screen.height, alpha: 0.2, scale: 0.4 }
+        ];
+
+        for (let i = 0; i < spineData.length; i++) {
+            const data = spineData[i];
+            // Load Spine data
+            PIXI.Assets.load(data.url).then((resource) => {
+                // Create Spine object
+                const spine = new PIXI.spine.Spine(resource.spineData);
+                app.stage.addChild(spine);
+                // Randomize the position of the Spine
+                spine.x = Math.random() * app.screen.width / 2;
+                spine.y = Math.random() * app.screen.height;
+                spine.rotation = 5.5;
+
+                // Randomize the scale of the Spine
+                const randomScale = Math.random() * 1.5 + 0.5; 3
+                spine.scale.set(randomScale);
+
+                // Set a random zIndex for the Spine
+                spine.zIndex = Math.floor(Math.random() * 3);
+
+                // Add animation to the Spine
+                const animationState = spine.state.setAnimation(0, 'animation', true);
+
+                // Animate the Spine
+                app.ticker.add(() => {
+                    spine.x -= 25;
+                    spine.y += 25;
+                    if (spine.y > app.screen.height) {
+                        spine.x = app.screen.width * (0.75 + Math.random() * 0.25);
+                        spine.y = -app.screen.height * Math.random();
+                        spine.zIndex = Math.floor(Math.random() * 3);
+                    }
+                });
+            });
+
+        }
+
+
+
+
+
+    </script>
+</body>
+
+</html>
